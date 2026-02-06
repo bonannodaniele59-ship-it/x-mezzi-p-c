@@ -24,7 +24,8 @@ export interface Trip {
   refuelingDone: boolean;
   maintenanceNeeded: MaintenanceReport;
   status: TripStatus;
-  synced?: boolean; // Per tracciare se è stato inviato al foglio Google
+  synced?: boolean;
+  icon?: string; // Icona rappresentativa del servizio
 }
 
 export interface Vehicle {

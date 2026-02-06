@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-// Fix: Corrected import casing to match file system (Layout.tsx)
+// Correct casing of imports to match consistent PascalCase root files and avoid duplicate name conflicts reported by the compiler.
 import Layout from './components/Layout';
-// Fix: Corrected import casing to match file system (TripForm.tsx)
 import TripForm from './components/TripForm';
 import { analyzeMaintenanceTrends } from './services/geminiService';
 import { Trip, TripStatus, Vehicle, Volunteer, INITIAL_VEHICLES, INITIAL_VOLUNTEERS, AppSettings } from './types';
@@ -51,8 +50,29 @@ const App: React.FC = () => {
     setCurrentView('ANALYSIS');
   };
 
+  const handleResetAllData = () => {
+    const confirmed = window.confirm(
+      "ATTENZIONE: Questa azione eliminerà permanentemente tutti i viaggi registrati, i mezzi personalizzati e i volontari aggiunti. L'app verrà riportata allo stato iniziale. Vuoi procedere?"
+    );
+    
+    if (confirmed) {
+      localStorage.removeItem('prociv_trips');
+      localStorage.removeItem('prociv_vehicles');
+      localStorage.removeItem('prociv_volunteers');
+      localStorage.removeItem('prociv_settings');
+      
+      setTrips([]);
+      setVehicles(INITIAL_VEHICLES);
+      setVolunteers(INITIAL_VOLUNTEERS);
+      setSettings({ googleScriptUrl: '' });
+      setActiveTrip(null);
+      setCurrentView('DASHBOARD');
+      alert("Tutti i dati sono stati eliminati correttamente.");
+    }
+  };
+
   const exportForSA = () => {
-    const headers = ['Data', 'Mezzo', 'Autista', 'KM Inizio', 'KM Fine', 'Percorsi', 'Destinazione', 'Guasti', 'Rifornimento'];
+    const headers = ['Data', 'Mezzo', 'Autista', 'KM Inizio', 'KM Fine', 'Percorsi', 'Destinazione', 'Guasti', 'Rifornimento', 'Tipo'];
     const rows = trips.filter(t => t.status === TripStatus.COMPLETED).map(t => {
       const v = vehicles.find(vec => vec.id === t.vehicleId);
       return [
@@ -64,7 +84,8 @@ const App: React.FC = () => {
         (t.endKm || 0) - (t.startKm || 0),
         t.destination,
         t.maintenanceNeeded.needed ? t.maintenanceNeeded.description : 'NO',
-        t.refuelingDone ? 'SI' : 'NO'
+        t.refuelingDone ? 'SI' : 'NO',
+        t.icon || '📍'
       ].join(';');
     });
 
@@ -109,18 +130,21 @@ const App: React.FC = () => {
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-50 rounded-full opacity-50"></div>
             
             {activeTrip ? (
-              <div className="w-full bg-blue-600 rounded-3xl p-6 text-white text-left animate-in zoom-in duration-300">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="px-3 py-1 bg-white text-blue-600 text-[10px] font-black rounded-full uppercase tracking-widest animate-pulse">In Missione</span>
-                  <span className="text-sm font-black">{vehicles.find(v => v.id === activeTrip.vehicleId)?.plate}</span>
+              <div className="w-full bg-blue-600 rounded-3xl p-6 text-white text-left animate-in zoom-in duration-300 relative overflow-hidden">
+                <div className="absolute right-[-20px] bottom-[-20px] text-8xl opacity-10 rotate-12">{activeTrip.icon || '📍'}</div>
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="px-3 py-1 bg-white text-blue-600 text-[10px] font-black rounded-full uppercase tracking-widest animate-pulse">In Missione</span>
+                    <span className="text-sm font-black">{activeTrip.icon} {vehicles.find(v => v.id === activeTrip.vehicleId)?.plate}</span>
+                  </div>
+                  <p className="text-xl font-black mb-6">{activeTrip.destination}</p>
+                  <button 
+                    onClick={() => setCurrentView('END_TRIP')}
+                    className="w-full bg-yellow-400 text-blue-900 py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all uppercase"
+                  >
+                    Registra Rientro
+                  </button>
                 </div>
-                <p className="text-xl font-black mb-6">{activeTrip.destination}</p>
-                <button 
-                  onClick={() => setCurrentView('END_TRIP')}
-                  className="w-full bg-yellow-400 text-blue-900 py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all uppercase"
-                >
-                  Registra Rientro
-                </button>
               </div>
             ) : (
               <button 
@@ -147,15 +171,22 @@ const App: React.FC = () => {
 
           <div className="space-y-3">
             <h3 className="font-black text-gray-400 uppercase text-[10px] tracking-[0.2em] px-4">Ultime Missioni</h3>
-            {trips.filter(t => t.status === TripStatus.COMPLETED).slice(0, 5).map(trip => (
-              <div key={trip.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
-                <div>
-                  <p className="font-black text-blue-900 text-sm">{vehicles.find(v => v.id === trip.vehicleId)?.plate}</p>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase truncate max-w-[150px]">{trip.destination}</p>
+            {trips.filter(t => t.status === TripStatus.COMPLETED).slice(0, 8).map(trip => (
+              <div key={trip.id} className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl shadow-inner">
+                  {trip.icon || '📍'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-blue-900 text-sm truncate">
+                    {vehicles.find(v => v.id === trip.vehicleId)?.plate}
+                  </p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase truncate">
+                    {trip.destination}
+                  </p>
                 </div>
                 <div className="text-right">
                    <p className="text-md font-black text-gray-800">{(trip.endKm || 0) - trip.startKm} KM</p>
-                   {trip.maintenanceNeeded.needed && <span className="text-[8px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-black uppercase">Guasto</span>}
+                   {trip.maintenanceNeeded.needed && <span className="text-[7px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-black uppercase">Guasto</span>}
                 </div>
               </div>
             ))}
@@ -193,7 +224,7 @@ const App: React.FC = () => {
                 className="w-full bg-white text-blue-900 py-4 rounded-2xl font-black text-sm uppercase flex items-center justify-center gap-3 active:scale-95 transition-all"
              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 112 0l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
                 Esporta CSV per SA
              </button>
@@ -248,6 +279,19 @@ const App: React.FC = () => {
                 <input name="vsurname" placeholder="Cognome" className="w-full text-xs p-4 rounded-xl border-2 border-gray-50 font-bold focus:border-blue-500 outline-none" required />
                 <button className="w-full bg-yellow-500 text-blue-900 p-4 rounded-xl font-black shadow-md uppercase text-xs tracking-widest">+ Aggiungi Autista</button>
              </form>
+          </div>
+
+          <div className="pt-4">
+             <button 
+                onClick={handleResetAllData}
+                className="w-full bg-red-100 text-red-600 py-4 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 border-2 border-red-200 hover:bg-red-200 transition-all active:scale-95"
+             >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                Reset Totale Dati
+             </button>
+             <p className="mt-2 text-[8px] text-gray-400 font-bold text-center uppercase">Questa azione è irreversibile</p>
           </div>
         </div>
       )}

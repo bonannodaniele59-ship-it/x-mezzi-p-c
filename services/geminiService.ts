@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Trip } from "../types";
 
 // Analizza i log di servizio dei mezzi per identificare trend di manutenzione e anomalie.
@@ -14,7 +14,7 @@ export const analyzeMaintenanceTrends = async (trips: Trip[]): Promise<string> =
 
   try {
     // Correctly call generateContent with model and contents at once
-    const response = await ai.models.generateContent({
+    const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-3-pro-preview', // Use gemini-3-pro-preview for complex reasoning tasks like log analysis.
       contents: prompt,
     });
@@ -32,7 +32,7 @@ export const suggestNoteOptimization = async (notes: string): Promise<string> =>
     const prompt = `Rendi questa nota di servizio più professionale e tecnica per un registro ufficiale della Protezione Civile: "${notes}"`;
     
     try {
-        const response = await ai.models.generateContent({
+        const response: GenerateContentResponse = await ai.models.generateContent({
             // Use gemini-3-flash-preview for basic text transformation and proofreading tasks
             model: 'gemini-3-flash-preview',
             contents: prompt,
