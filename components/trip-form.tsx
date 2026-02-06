@@ -30,6 +30,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, activeTrip, vehicles, volun
     endKm: activeTrip?.endKm || activeTrip?.startKm || 0,
     destination: activeTrip?.destination || '',
     reason: activeTrip?.reason || '',
+    customReason: activeTrip?.reason && !SERVICE_CATEGORIES.some(c => c.label === activeTrip.reason) ? activeTrip.reason : '',
     notes: activeTrip?.notes || '',
     icon: activeTrip?.icon || '📍',
     refuelingDone: activeTrip?.refuelingDone || false,
@@ -37,6 +38,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, activeTrip, vehicles, volun
     maintenanceDescription: activeTrip?.maintenanceNeeded?.description || '',
   });
 
+  const isAltro = formData.icon === '📍';
   const isKmInvalid = isEnding && formData.endKm < (activeTrip?.startKm || 0);
 
   const adjustKm = (amount: number) => {
@@ -49,12 +51,19 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, activeTrip, vehicles, volun
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isKmInvalid) {
-      return; 
-    }
+    if (isKmInvalid) return; 
 
     const selectedVolunteer = volunteers.find(v => v.id === formData.volunteerId);
     const driverName = selectedVolunteer ? `${selectedVolunteer.name} ${selectedVolunteer.surname}` : 'Sconosciuto';
+    
+    // Determina la ragione del servizio
+    let reason = formData.reason;
+    if (isAltro) {
+      reason = formData.customReason || 'Altro';
+    } else {
+      const cat = SERVICE_CATEGORIES.find(c => c.icon === formData.icon);
+      reason = cat ? cat.label : 'Servizio';
+    }
 
     const cleanStartKm = Math.round(Number(formData.startKm));
     const cleanEndKm = Math.round(Number(formData.endKm));
@@ -81,7 +90,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, activeTrip, vehicles, volun
         startKm: cleanStartKm,
         destination: formData.destination,
         icon: formData.icon,
-        reason: 'Servizio',
+        reason: reason,
         notes: formData.notes,
         refuelingDone: formData.refuelingDone,
         startTime: new Date().toISOString(),
@@ -108,7 +117,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, activeTrip, vehicles, volun
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Autista (Volontario)</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Autista</label>
               <select 
                 className="w-full rounded-xl border-2 border-gray-100 p-4 bg-gray-50 font-bold text-blue-900 focus:border-blue-500 outline-none transition-all"
                 value={formData.volunteerId}
@@ -127,7 +136,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, activeTrip, vehicles, volun
                   <button
                     key={cat.label}
                     type="button"
-                    onClick={() => setFormData({...formData, icon: cat.icon})}
+                    onClick={() => setFormData({...formData, icon: cat.icon, reason: cat.label})}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 font-bold text-xs transition-all ${formData.icon === cat.icon ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-blue-200'}`}
                   >
                     <span>{cat.icon}</span>
@@ -136,6 +145,20 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, activeTrip, vehicles, volun
                 ))}
               </div>
             </div>
+
+            {isAltro && (
+              <div className="animate-in slide-in-from-top-2">
+                <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 block">Specifica Motivo Altro</label>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border-2 border-blue-100 p-4 font-bold text-blue-900 focus:border-blue-500 outline-none"
+                  placeholder="Es. Trasporto urgente, Sopralluogo..."
+                  value={formData.customReason}
+                  onChange={(e) => setFormData({...formData, customReason: e.target.value})}
+                  required
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-1">
@@ -263,30 +286,17 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, activeTrip, vehicles, volun
             rows={2}
             value={formData.notes}
             onChange={(e) => setFormData({...formData, notes: e.target.value})}
-            placeholder="Eventuali segnalazioni non tecniche..."
+            placeholder="Eventuali segnalazioni..."
           />
         </div>
       </div>
-
-      {isKmInvalid && (
-        <div className="bg-red-100 border-2 border-red-500 p-4 rounded-2xl flex items-center gap-3 animate-in slide-in-from-bottom-2">
-           <div className="bg-red-500 text-white p-1 rounded-full">
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-             </svg>
-           </div>
-           <p className="text-red-700 text-xs font-black uppercase leading-tight">
-             I KM di rientro non possono essere inferiori ai KM di partenza.
-           </p>
-        </div>
-      )}
 
       <button
         type="submit"
         disabled={isKmInvalid}
         className={`w-full py-5 rounded-2xl text-white font-black text-xl shadow-xl transform active:scale-95 transition-all ${isKmInvalid ? 'bg-gray-400 shadow-none cursor-not-allowed' : (isEnding ? 'bg-green-600 shadow-green-200' : 'bg-blue-600 shadow-blue-200')}`}
       >
-        {isEnding ? 'COMPLETA E CHIUDI' : 'AVVIA SERVIZIO'}
+        {isEnding ? 'CHIUDI SERVIZIO' : 'AVVIA SERVIZIO'}
       </button>
     </form>
   );

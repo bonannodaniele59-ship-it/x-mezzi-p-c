@@ -25,7 +25,8 @@ export interface Trip {
   maintenanceNeeded: MaintenanceReport;
   status: TripStatus;
   synced?: boolean;
-  icon?: string; // Icona rappresentativa del servizio
+  syncError?: boolean;
+  icon?: string;
 }
 
 export interface Vehicle {
@@ -42,6 +43,10 @@ export interface Volunteer {
 
 export interface AppSettings {
   googleScriptUrl: string;
+  adminPassword?: string;
+  notificationsEnabled: boolean;
+  maxTripDurationHours: number;
+  standardEndTime: string;
 }
 
 export const INITIAL_VEHICLES: Vehicle[] = [

@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'prociv-logbook-v1.2';
+const CACHE_NAME = 'prociv-logbook-v1.3';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -29,9 +29,26 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(response => {
-      return response || fetch(event.request).catch(() => {
-        // Opzionale: fallback per offline
-      });
+      return response || fetch(event.request).catch(() => {});
+    })
+  );
+});
+
+// Gestione clic sulla notifica
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      if (clientList.length > 0) {
+        let client = clientList[0];
+        for (let i = 0; i < clientList.length; i++) {
+          if (clientList[i].focused) {
+            client = clientList[i];
+          }
+        }
+        return client.focus();
+      }
+      return clients.openWindow('/');
     })
   );
 });
