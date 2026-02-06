@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-// Correct casing of imports to match consistent PascalCase root files and avoid duplicate name conflicts reported by the compiler.
-import Layout from './components/Layout';
-import TripForm from './components/TripForm';
+/* Import Layout and TripForm using lowercase filenames to match the v1.2 files and resolve casing conflicts */
+import Layout from './components/layout';
+import TripForm from './components/trip-form';
 import { analyzeMaintenanceTrends } from './services/geminiService';
 import { Trip, TripStatus, Vehicle, Volunteer, INITIAL_VEHICLES, INITIAL_VOLUNTEERS, AppSettings } from './types';
 
@@ -17,8 +17,6 @@ const App: React.FC = () => {
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  
-  const syncingIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const savedTrips = localStorage.getItem('prociv_trips');
@@ -52,22 +50,11 @@ const App: React.FC = () => {
 
   const handleResetAllData = () => {
     const confirmed = window.confirm(
-      "ATTENZIONE: Questa azione eliminerà permanentemente tutti i viaggi registrati, i mezzi personalizzati e i volontari aggiunti. L'app verrà riportata allo stato iniziale. Vuoi procedere?"
+      "ATTENZIONE: Questa azione eliminerà permanentemente tutti i dati. Vuoi procedere?"
     );
-    
     if (confirmed) {
-      localStorage.removeItem('prociv_trips');
-      localStorage.removeItem('prociv_vehicles');
-      localStorage.removeItem('prociv_volunteers');
-      localStorage.removeItem('prociv_settings');
-      
-      setTrips([]);
-      setVehicles(INITIAL_VEHICLES);
-      setVolunteers(INITIAL_VOLUNTEERS);
-      setSettings({ googleScriptUrl: '' });
-      setActiveTrip(null);
-      setCurrentView('DASHBOARD');
-      alert("Tutti i dati sono stati eliminati correttamente.");
+      localStorage.clear();
+      window.location.reload();
     }
   };
 
@@ -88,7 +75,6 @@ const App: React.FC = () => {
         t.icon || '📍'
       ].join(';');
     });
-
     const csvContent = [headers.join(';'), ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -97,7 +83,7 @@ const App: React.FC = () => {
     link.click();
   };
 
-  const handleSaveTrip = async (tripData: Partial<Trip>) => {
+  const handleSaveTrip = (tripData: Partial<Trip>) => {
     if (tripData.status === TripStatus.COMPLETED) {
       const completedTrip = tripData as Trip;
       setTrips(prev => prev.map(t => t.id === completedTrip.id ? completedTrip : t));
@@ -114,23 +100,20 @@ const App: React.FC = () => {
     <Layout 
       title={currentView === 'DASHBOARD' ? 'LOGBOOK LEINÌ' : currentView.replace('_', ' ')}
       onBack={currentView !== 'DASHBOARD' ? () => setCurrentView('DASHBOARD') : undefined}
-      actions={
-        currentView === 'DASHBOARD' && (
-          <button onClick={() => setCurrentView('ADMIN')} className="p-2 text-white bg-blue-800 rounded-full shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-            </svg>
-          </button>
-        )
-      }
+      actions={currentView === 'DASHBOARD' && (
+        <button onClick={() => setCurrentView('ADMIN')} className="p-2 text-white bg-blue-800 rounded-full shadow-lg active:scale-90 transition-transform">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+          </svg>
+        </button>
+      )}
     >
       {currentView === 'DASHBOARD' && (
         <div className="space-y-6">
           <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-8 flex flex-col items-center text-center relative overflow-hidden">
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-50 rounded-full opacity-50"></div>
-            
             {activeTrip ? (
-              <div className="w-full bg-blue-600 rounded-3xl p-6 text-white text-left animate-in zoom-in duration-300 relative overflow-hidden">
+              <div className="w-full bg-blue-600 rounded-3xl p-6 text-white text-left relative overflow-hidden">
                 <div className="absolute right-[-20px] bottom-[-20px] text-8xl opacity-10 rotate-12">{activeTrip.icon || '📍'}</div>
                 <div className="relative z-10">
                   <div className="flex justify-between items-center mb-4">
@@ -138,19 +121,13 @@ const App: React.FC = () => {
                     <span className="text-sm font-black">{activeTrip.icon} {vehicles.find(v => v.id === activeTrip.vehicleId)?.plate}</span>
                   </div>
                   <p className="text-xl font-black mb-6">{activeTrip.destination}</p>
-                  <button 
-                    onClick={() => setCurrentView('END_TRIP')}
-                    className="w-full bg-yellow-400 text-blue-900 py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all uppercase"
-                  >
+                  <button onClick={() => setCurrentView('END_TRIP')} className="w-full bg-yellow-400 text-blue-900 py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all uppercase">
                     Registra Rientro
                   </button>
                 </div>
               </div>
             ) : (
-              <button 
-                onClick={() => setCurrentView('NEW_TRIP')}
-                className="w-full bg-blue-600 text-white py-6 rounded-[2rem] font-black text-xl shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all group"
-              >
+              <button onClick={() => setCurrentView('NEW_TRIP')} className="w-full bg-blue-600 text-white py-6 rounded-[2rem] font-black text-xl shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all group">
                 <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
@@ -159,12 +136,7 @@ const App: React.FC = () => {
                 NUOVA USCITA
               </button>
             )}
-
-            <button 
-              onClick={handleAiAnalysis}
-              className="mt-6 flex items-center gap-2 text-[10px] font-black text-blue-800 bg-blue-50 px-4 py-2 rounded-full border border-blue-100 uppercase tracking-tight hover:bg-blue-100 transition-colors"
-              disabled={isAiLoading || trips.length === 0}
-            >
+            <button onClick={handleAiAnalysis} className="mt-6 flex items-center gap-2 text-[10px] font-black text-blue-800 bg-blue-50 px-4 py-2 rounded-full border border-blue-100 uppercase hover:bg-blue-100 transition-colors" disabled={isAiLoading || trips.length === 0}>
               {isAiLoading ? 'Analisi in corso...' : '✨ Analisi Flotta IA'}
             </button>
           </div>
@@ -172,17 +144,11 @@ const App: React.FC = () => {
           <div className="space-y-3">
             <h3 className="font-black text-gray-400 uppercase text-[10px] tracking-[0.2em] px-4">Ultime Missioni</h3>
             {trips.filter(t => t.status === TripStatus.COMPLETED).slice(0, 8).map(trip => (
-              <div key={trip.id} className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl shadow-inner">
-                  {trip.icon || '📍'}
-                </div>
+              <div key={trip.id} className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 animate-in fade-in">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl">{trip.icon || '📍'}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-black text-blue-900 text-sm truncate">
-                    {vehicles.find(v => v.id === trip.vehicleId)?.plate}
-                  </p>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase truncate">
-                    {trip.destination}
-                  </p>
+                  <p className="font-black text-blue-900 text-sm truncate">{vehicles.find(v => v.id === trip.vehicleId)?.plate}</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase truncate">{trip.destination}</p>
                 </div>
                 <div className="text-right">
                    <p className="text-md font-black text-gray-800">{(trip.endKm || 0) - trip.startKm} KM</p>
@@ -201,97 +167,37 @@ const App: React.FC = () => {
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl animate-in slide-in-from-bottom-4">
             <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-black">✨</div>
-                <h3 className="font-black text-blue-900 uppercase text-sm tracking-widest">Riepilogo Logistico IA</h3>
+                <h3 className="font-black text-blue-900 uppercase text-sm tracking-widest">Analisi Logistica IA</h3>
             </div>
             <div className="prose prose-sm text-gray-600 leading-relaxed font-medium">
                 {aiSummary?.split('\n').map((line, i) => <p key={i} className="mb-2">{line}</p>)}
             </div>
-            <button 
-                onClick={() => setCurrentView('DASHBOARD')}
-                className="w-full mt-6 bg-blue-900 text-white py-4 rounded-2xl font-black text-sm uppercase"
-            >
-                Torna Indietro
-            </button>
+            <button onClick={() => setCurrentView('DASHBOARD')} className="w-full mt-6 bg-blue-900 text-white py-4 rounded-2xl font-black text-sm uppercase">Chiudi</button>
         </div>
       )}
 
       {currentView === 'ADMIN' && (
         <div className="space-y-6 animate-in slide-in-from-right pb-10">
           <div className="bg-blue-900 p-6 rounded-[2.5rem] text-white shadow-2xl">
-             <h3 className="text-xs font-black uppercase mb-4 tracking-widest text-blue-200">Gestione Database SA</h3>
-             <button 
-                onClick={exportForSA}
-                className="w-full bg-white text-blue-900 py-4 rounded-2xl font-black text-sm uppercase flex items-center justify-center gap-3 active:scale-95 transition-all"
-             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 112 0l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-                Esporta CSV per SA
+             <h3 className="text-xs font-black uppercase mb-4 tracking-widest text-blue-200">Export Dati SA</h3>
+             <button onClick={exportForSA} className="w-full bg-white text-blue-900 py-4 rounded-2xl font-black text-sm uppercase flex items-center justify-center gap-3 active:scale-95 transition-all">
+                Esporta CSV
              </button>
-             <p className="mt-3 text-[9px] text-blue-300 font-bold uppercase leading-tight text-center">Formato separato da punto e virgola (;)</p>
           </div>
-
           <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-lg">
              <h3 className="text-xs font-black text-gray-800 uppercase mb-4 tracking-widest">Configurazione Mezzi</h3>
-             <div className="space-y-2 mb-6">
-                {vehicles.map(v => (
-                  <div key={v.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl">
-                    <p className="font-black text-blue-900 text-sm">{v.plate} <span className="text-gray-400 font-bold ml-2 text-xs uppercase">{v.model}</span></p>
-                    <button onClick={() => setVehicles(vehicles.filter(item => item.id !== v.id))} className="text-red-400 p-2 hover:text-red-600 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-             </div>
              <form onSubmit={(e: any) => {
                  e.preventDefault();
                  setVehicles([...vehicles, { id: Date.now().toString(), plate: e.target.plate.value.toUpperCase(), model: e.target.model.value }]);
                  e.target.reset();
              }} className="space-y-2">
-                <input name="plate" placeholder="Targa" className="w-full text-xs p-4 rounded-xl border-2 border-gray-50 font-bold focus:border-blue-500 outline-none" required />
-                <input name="model" placeholder="Modello Mezzo" className="w-full text-xs p-4 rounded-xl border-2 border-gray-50 focus:border-blue-500 outline-none" required />
-                <button className="w-full bg-blue-600 text-white p-4 rounded-xl font-black shadow-md uppercase text-xs tracking-widest">+ Aggiungi Mezzo</button>
+                <input name="plate" placeholder="Targa" className="w-full text-xs p-4 rounded-xl border-2 border-gray-50 font-bold outline-none" required />
+                <input name="model" placeholder="Modello" className="w-full text-xs p-4 rounded-xl border-2 border-gray-50 outline-none" required />
+                <button className="w-full bg-blue-600 text-white p-4 rounded-xl font-black uppercase text-xs">+ Aggiungi</button>
              </form>
           </div>
-
-          <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-lg">
-             <h3 className="text-xs font-black text-gray-800 uppercase mb-4 tracking-widest">Banca Dati Autisti</h3>
-             <div className="space-y-2 mb-6">
-                {volunteers.map(v => (
-                  <div key={v.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl">
-                    <p className="font-black text-blue-900 text-sm">{v.name} <span className="text-gray-900 font-black ml-1 uppercase">{v.surname}</span></p>
-                    <button onClick={() => setVolunteers(volunteers.filter(item => item.id !== v.id))} className="text-red-400 p-2 hover:text-red-600 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-             </div>
-             <form onSubmit={(e: any) => {
-                 e.preventDefault();
-                 setVolunteers([...volunteers, { id: 'V' + Date.now(), name: e.target.vname.value, surname: e.target.vsurname.value }]);
-                 e.target.reset();
-             }} className="space-y-2">
-                <input name="vname" placeholder="Nome" className="w-full text-xs p-4 rounded-xl border-2 border-gray-50 font-bold focus:border-blue-500 outline-none" required />
-                <input name="vsurname" placeholder="Cognome" className="w-full text-xs p-4 rounded-xl border-2 border-gray-50 font-bold focus:border-blue-500 outline-none" required />
-                <button className="w-full bg-yellow-500 text-blue-900 p-4 rounded-xl font-black shadow-md uppercase text-xs tracking-widest">+ Aggiungi Autista</button>
-             </form>
-          </div>
-
           <div className="pt-4">
-             <button 
-                onClick={handleResetAllData}
-                className="w-full bg-red-100 text-red-600 py-4 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 border-2 border-red-200 hover:bg-red-200 transition-all active:scale-95"
-             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                Reset Totale Dati
-             </button>
-             <p className="mt-2 text-[8px] text-gray-400 font-bold text-center uppercase">Questa azione è irreversibile</p>
+             <button onClick={handleResetAllData} className="w-full bg-red-100 text-red-600 py-4 rounded-2xl font-black text-xs uppercase">Reset Totale Dati</button>
           </div>
         </div>
       )}
