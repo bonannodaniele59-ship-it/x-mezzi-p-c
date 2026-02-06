@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-// Use PascalCase imports to match the canonical filenames of the components
+// Fix: Corrected import casing to match file system (Layout.tsx)
 import Layout from './components/Layout';
+// Fix: Corrected import casing to match file system (TripForm.tsx)
 import TripForm from './components/TripForm';
 import { analyzeMaintenanceTrends } from './services/geminiService';
 import { Trip, TripStatus, Vehicle, Volunteer, INITIAL_VEHICLES, INITIAL_VOLUNTEERS, AppSettings } from './types';
@@ -17,7 +18,6 @@ const App: React.FC = () => {
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
   
   const syncingIds = useRef<Set<string>>(new Set());
 
@@ -61,7 +61,7 @@ const App: React.FC = () => {
         t.driverName,
         t.startKm,
         t.endKm,
-        (t.endKm || 0) - t.startKm,
+        (t.endKm || 0) - (t.startKm || 0),
         t.destination,
         t.maintenanceNeeded.needed ? t.maintenanceNeeded.description : 'NO',
         t.refuelingDone ? 'SI' : 'NO'
